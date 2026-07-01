@@ -5,7 +5,7 @@ import AdminLayout from '@/components/AdminLayout'
 import { createClient } from '@/lib/supabase/client'
 import { useApp } from '@/context/AppContext'
 import { useToast } from '@/context/ToastContext'
-import { Settings as SettingsIcon, Save, Calendar, Globe, Map, ShoppingBag, Loader2, ShieldCheck, Lock, Eye, EyeOff } from 'lucide-react'
+import { Settings as SettingsIcon, Save, Calendar, Globe, Map, ShoppingBag, Loader2, ShieldCheck, Eye, EyeOff } from 'lucide-react'
 
 export default function AdminSettingsPage() {
   const { refreshSettings } = useApp()
