@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Search, Calendar, MapPin, Tag, ShoppingBag, ArrowRight, Eye, Package, User, Clock, AlertCircle } from 'lucide-react'
+import { Search, ShoppingBag, ArrowRight, Eye, Package, User } from 'lucide-react'
 import { useApp } from '@/context/AppContext'
 import { createClient } from '@/lib/supabase/client'
 import { CATEGORIES } from '@/lib/catalog'
@@ -36,7 +36,7 @@ export default function Home() {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([])
   const [latestProducts, setLatestProducts] = useState<Product[]>([])
   const [stats, setStats] = useState({ totalApproved: 0, totalSold: 0, totalItems: 0 })
-  const [formattedEventDate, setFormattedEventDate] = useState('')
+
 
   // Fetch home page data
   useEffect(() => {
@@ -89,21 +89,7 @@ export default function Home() {
     fetchData()
   }, [])
 
-  // Format event date
-  useEffect(() => {
-    if (eventDetails.event_date) {
-      setFormattedEventDate(
-        new Date(eventDetails.event_date).toLocaleDateString(undefined, { 
-          weekday: 'long', 
-          year: 'numeric', 
-          month: 'long', 
-          day: 'numeric', 
-          hour: '2-digit', 
-          minute: '2-digit' 
-        })
-      )
-    }
-  }, [eventDetails.event_date])
+
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -205,64 +191,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Countdown Section */}
-      {/* Event Details Section */}
-      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-16">
-        <div className="glass-panel p-8 rounded-3xl grid grid-cols-1 lg:grid-cols-3 gap-8 items-center border border-zinc-200/50 dark:border-white/5">
-          {/* Text details */}
-          <div className="lg:col-span-2 space-y-3">
-            <span className="text-[#0071e3] dark:text-[#2997ff] text-xs uppercase tracking-widest font-bold flex items-center gap-1.5">
-              <Calendar className="w-4.5 h-4.5" /> Event Date & Location
-            </span>
-            <h2 className="text-2xl font-bold tracking-tight">{eventDetails.title}</h2>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400 font-light leading-relaxed">
-              {eventDetails.description}
-            </p>
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4 pt-2 text-sm text-zinc-700 dark:text-zinc-300">
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-zinc-400" />
-                <span>{formattedEventDate}</span>
-              </div>
-              {settings.address && (
-                <div className="flex items-start gap-2">
-                  <MapPin className="w-4 h-4 text-zinc-400 mt-0.5 flex-shrink-0" />
-                  <span>{settings.address}</span>
-                </div>
-              )}
-            </div>
-          </div>
 
-          {/* Submission Action Box */}
-          <div className="lg:col-span-1 flex flex-col justify-center items-stretch p-6 rounded-2xl border border-zinc-200/50 dark:border-white/5 bg-zinc-50/50 dark:bg-zinc-950/20 text-center gap-4">
-            <span className="text-xs uppercase tracking-wider text-zinc-450 font-semibold">Participate in Event</span>
-            {settings.submission_enabled ? (
-              <>
-                <p className="text-xs text-zinc-500 leading-relaxed font-light">
-                  Product submissions are open! Add your homegrown crops or snacks to the catalog.
-                </p>
-                <Link 
-                  href="/submit" 
-                  className="w-full py-2.5 rounded-full bg-[#0071e3] hover:bg-[#0077ed] text-white text-xs font-semibold shadow transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                >
-                  <Package className="w-4 h-4" /> Submit Product Details
-                </Link>
-              </>
-            ) : (
-              <>
-                <p className="text-xs text-zinc-500 leading-relaxed font-light">
-                  Submissions are closed for this marketplace event. Visitors can browse all listings.
-                </p>
-                <Link 
-                  href="/products" 
-                  className="w-full py-2.5 rounded-full border border-zinc-200 dark:border-zinc-800 text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-900"
-                >
-                  <ShoppingBag className="w-4 h-4" /> Browse Catalog
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
-      </section>
 
       {/* Featured Products */}
       {featuredProducts.length > 0 && (

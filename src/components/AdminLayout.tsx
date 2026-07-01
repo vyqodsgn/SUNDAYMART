@@ -3,9 +3,12 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, ShoppingBag, FolderHeart, ListPlus, Settings, Volume2, LogOut, Loader2, ArrowLeft } from 'lucide-react'
+import { LayoutDashboard, ShoppingBag, FolderHeart, ListPlus, Settings, Volume2, LogOut, Loader2, ArrowLeft, ShieldX } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useToast } from '@/context/ToastContext'
+
+// The single administrator email address registered in Supabase Auth
+const ADMIN_EMAIL = 'adminsjck@sjck.internal'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -14,6 +17,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -21,8 +25,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       const { data: { user }, error } = await supabase.auth.getUser()
       if (error || !user) {
         router.push('/admin/login')
+      } else if (user.email !== ADMIN_EMAIL) {
+        // Authenticated but not the admin — redirect to access denied
+        router.push('/access-denied')
       } else {
         setUser(user)
+        setIsAdmin(true)
       }
       setLoading(false)
     }
@@ -62,7 +70,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     )
   }
 
-  if (!user) return null
+  if (!user || !isAdmin) return null
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-zinc-50 dark:bg-black w-full text-zinc-800 dark:text-zinc-100 transition-colors">

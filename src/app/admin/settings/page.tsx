@@ -5,7 +5,7 @@ import AdminLayout from '@/components/AdminLayout'
 import { createClient } from '@/lib/supabase/client'
 import { useApp } from '@/context/AppContext'
 import { useToast } from '@/context/ToastContext'
-import { Settings as SettingsIcon, Save, Calendar, Globe, Map, ShoppingBag, Loader2 } from 'lucide-react'
+import { Settings as SettingsIcon, Save, Calendar, Globe, Map, ShoppingBag, Loader2, ShieldCheck, Lock, Eye, EyeOff } from 'lucide-react'
 
 export default function AdminSettingsPage() {
   const { refreshSettings } = useApp()
@@ -32,6 +32,14 @@ export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(true)
   const [savingSettings, setSavingSettings] = useState(false)
   const [savingEvent, setSavingEvent] = useState(false)
+
+  // Password change states
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [changingPassword, setChangingPassword] = useState(false)
+  const [showCurrentPw, setShowCurrentPw] = useState(false)
+  const [showNewPw, setShowNewPw] = useState(false)
 
   useEffect(() => {
     const fetchConfigs = async () => {
@@ -369,6 +377,119 @@ export default function AdminSettingsPage() {
             </form>
           </div>
 
+        </div>
+
+        {/* Change Password Section */}
+        <div className="glass-panel p-6 rounded-2xl border border-zinc-200/50 dark:border-white/5 bg-white/40 dark:bg-zinc-950/10 space-y-6">
+          <h2 className="text-lg font-bold tracking-tight flex items-center gap-1.5">
+            <ShieldCheck className="w-5 h-5 text-zinc-400" /> Change Administrator Password
+          </h2>
+          <p className="text-xs text-zinc-500">
+            Update your admin login password. You must enter your current password to confirm.
+          </p>
+
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault()
+              if (!currentPassword.trim()) { showToast('Enter current password', 'error'); return }
+              if (newPassword.length < 8) { showToast('New password must be at least 8 characters', 'error'); return }
+              if (newPassword !== confirmPassword) { showToast('Passwords do not match', 'error'); return }
+              if (newPassword === 'sjck1985') { showToast('Choose a different password from the default', 'error'); return }
+              setChangingPassword(true)
+              const supabase = createClient()
+              // Re-authenticate first
+              const { error: signInErr } = await supabase.auth.signInWithPassword({
+                email: 'adminsjck@sjck.internal',
+                password: currentPassword.trim()
+              })
+              if (signInErr) {
+                showToast('Current password is incorrect', 'error')
+                setChangingPassword(false)
+                return
+              }
+              const { error: updateErr } = await supabase.auth.updateUser({ password: newPassword })
+              if (updateErr) {
+                showToast(updateErr.message || 'Failed to update password', 'error')
+              } else {
+                showToast('Password updated successfully!', 'success')
+                setCurrentPassword('')
+                setNewPassword('')
+                setConfirmPassword('')
+              }
+              setChangingPassword(false)
+            }}
+            className="space-y-4"
+            id="change-password-form"
+          >
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Current Password</label>
+              <div className="relative">
+                <input
+                  id="current-password"
+                  type={showCurrentPw ? 'text' : 'password'}
+                  placeholder="Enter current password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  disabled={changingPassword}
+                  className="w-full text-xs px-3.5 py-2.5 pr-10 rounded-lg border border-zinc-200 dark:border-zinc-855 bg-white dark:bg-zinc-950 focus:outline-none disabled:opacity-50"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrentPw(!showCurrentPw)}
+                  className="absolute right-3 top-2.5 text-zinc-400 hover:text-zinc-600 cursor-pointer"
+                  tabIndex={-1}
+                >
+                  {showCurrentPw ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">New Password</label>
+              <div className="relative">
+                <input
+                  id="new-admin-password"
+                  type={showNewPw ? 'text' : 'password'}
+                  placeholder="Minimum 8 characters"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  disabled={changingPassword}
+                  className="w-full text-xs px-3.5 py-2.5 pr-10 rounded-lg border border-zinc-200 dark:border-zinc-855 bg-white dark:bg-zinc-950 focus:outline-none disabled:opacity-50"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPw(!showNewPw)}
+                  className="absolute right-3 top-2.5 text-zinc-400 hover:text-zinc-600 cursor-pointer"
+                  tabIndex={-1}
+                >
+                  {showNewPw ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Confirm New Password</label>
+              <input
+                id="confirm-admin-password"
+                type="password"
+                placeholder="Re-enter new password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                disabled={changingPassword}
+                className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-zinc-200 dark:border-zinc-855 bg-white dark:bg-zinc-950 focus:outline-none disabled:opacity-50"
+              />
+            </div>
+
+            <button
+              id="change-password-btn"
+              type="submit"
+              disabled={changingPassword}
+              className="py-2.5 px-6 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs transition-all shadow flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+            >
+              {changingPassword ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5" />}
+              Update Password
+            </button>
+          </form>
         </div>
 
       </div>

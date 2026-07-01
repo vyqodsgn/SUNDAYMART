@@ -1,6 +1,9 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+// The single administrator email. Must match what is registered in Supabase Auth.
+const ADMIN_EMAIL = 'adminsjck@sjck.internal'
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
@@ -39,13 +42,22 @@ export async function updateSession(request: NextRequest) {
     // Exclude the login page from authentication check
     if (pathname !== '/admin/login') {
       if (!user) {
+        // Not logged in — redirect to login
         const url = request.nextUrl.clone()
         url.pathname = '/admin/login'
         return NextResponse.redirect(url)
       }
+
+      // Logged in, but NOT the administrator — redirect to access denied
+      if (user.email !== ADMIN_EMAIL) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/access-denied'
+        return NextResponse.redirect(url)
+      }
     } else {
-      // If user is already logged in and tries to access /admin/login, redirect to dashboard
-      if (user) {
+      // If the administrator is already logged in and tries to access /admin/login,
+      // redirect to dashboard
+      if (user && user.email === ADMIN_EMAIL) {
         const url = request.nextUrl.clone()
         url.pathname = '/admin/dashboard'
         return NextResponse.redirect(url)
