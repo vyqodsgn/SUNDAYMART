@@ -17,7 +17,6 @@ interface Product {
   price: number
   quantity_option: string
   seller_name: string
-  seller_phone: string
   seller_quantity: number
   notes: string | null
   status: string
@@ -57,7 +56,6 @@ export default function AdminProductsPage() {
   const [editPrice, setEditPrice] = useState('')
   const [editQuantityOption, setEditQuantityOption] = useState('')
   const [editSellerName, setEditSellerName] = useState('')
-  const [editSellerPhone, setEditSellerPhone] = useState('')
   const [editSellerQuantity, setEditSellerQuantity] = useState('')
   const [editNotes, setEditNotes] = useState('')
   const [editStatus, setEditStatus] = useState('')
@@ -98,7 +96,6 @@ export default function AdminProductsPage() {
     const matchesSearch = 
       prod.name.toLowerCase().includes(searchLower) ||
       prod.seller_name.toLowerCase().includes(searchLower) ||
-      prod.seller_phone.toLowerCase().includes(searchLower) ||
       (prod.notes && prod.notes.toLowerCase().includes(searchLower))
 
     // 2. Status Filter
@@ -254,7 +251,6 @@ export default function AdminProductsPage() {
     setEditPrice(String(prod.price))
     setEditQuantityOption(prod.quantity_option)
     setEditSellerName(prod.seller_name)
-    setEditSellerPhone(prod.seller_phone)
     setEditSellerQuantity(String(prod.seller_quantity))
     setEditNotes(prod.notes || '')
     setEditStatus(prod.status)
@@ -269,7 +265,7 @@ export default function AdminProductsPage() {
     e.preventDefault()
     if (!editingProduct) return
 
-    if (!editName.trim() || !editCategoryId || !editPrice || !editQuantityOption || !editSellerName.trim() || !editSellerPhone.trim() || !editSellerQuantity) {
+    if (!editName.trim() || !editCategoryId || !editPrice || !editQuantityOption || !editSellerName.trim() || !editSellerQuantity) {
       showToast('All fields except notes are required', 'error')
       return
     }
@@ -286,7 +282,6 @@ export default function AdminProductsPage() {
           price: Number(editPrice),
           quantity_option: editQuantityOption.trim(),
           seller_name: editSellerName.trim(),
-          seller_phone: editSellerPhone.trim(),
           seller_quantity: Number(editSellerQuantity),
           notes: editNotes.trim() || null,
           status: editStatus,
@@ -312,7 +307,7 @@ export default function AdminProductsPage() {
       return
     }
 
-    const headers = ['ID', 'Name', 'Category', 'Price (INR)', 'Unit Package Size', 'Seller Name', 'Seller Phone', 'Quantity', 'Status', 'Featured Pick', 'Created At']
+    const headers = ['ID', 'Name', 'Category', 'Price (INR)', 'Unit Package Size', 'Seller Name', 'Quantity', 'Status', 'Featured Pick', 'Created At']
     const rows = filteredProducts.map(p => [
       p.id,
       p.name,
@@ -320,7 +315,6 @@ export default function AdminProductsPage() {
       p.price,
       p.quantity_option,
       p.seller_name,
-      p.seller_phone,
       p.seller_quantity,
       p.status,
       p.is_featured ? 'Yes' : 'No',
@@ -513,7 +507,6 @@ export default function AdminProductsPage() {
                       {/* Seller Info */}
                       <td className="p-4">
                         <div className="font-semibold">{prod.seller_name}</div>
-                        <div className="text-[10px] text-zinc-450 mt-0.5">{prod.seller_phone}</div>
                         <div className="text-[10px] text-zinc-400 font-light mt-0.5">Qty: {prod.seller_quantity} packs</div>
                       </td>
 
@@ -727,16 +720,7 @@ export default function AdminProductsPage() {
                   />
                 </div>
 
-                {/* Seller Phone */}
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Phone Number</label>
-                  <input
-                    type="text"
-                    value={editSellerPhone}
-                    onChange={(e) => setEditSellerPhone(e.target.value)}
-                    className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-zinc-200 dark:border-zinc-850 bg-white dark:bg-zinc-950 focus:outline-none"
-                  />
-                </div>
+
 
                 {/* Seller Quantity */}
                 <div className="space-y-1">

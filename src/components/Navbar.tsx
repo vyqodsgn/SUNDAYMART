@@ -93,7 +93,7 @@ export default function Navbar() {
             </div>
           )}
           <span className="font-semibold text-lg tracking-tight group-hover:opacity-80 transition-opacity">
-            {settings.church_name} <span className="font-light text-muted">Mart</span>
+            {settings.church_name}
           </span>
         </Link>
 

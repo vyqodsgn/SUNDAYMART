@@ -31,7 +31,7 @@ interface AppContextType {
 }
 
 const defaultSettings: Settings = {
-  church_name: 'St Joseph Church Karyavattom',
+  church_name: 'SJCK Sunday Mart',
   church_logo: null,
   theme: 'dark',
   contact_number: '+91 94470 12345',

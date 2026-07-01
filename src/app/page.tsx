@@ -14,7 +14,6 @@ interface Product {
   price: number
   quantity_option: string
   seller_name: string
-  image_url: string | null
   status: string
   is_featured: boolean
   created_at: string
@@ -386,60 +385,44 @@ export default function Home() {
 // Sub-Component: Product Card
 function ProductCard({ product }: { product: Product }) {
   return (
-    <div className="glass-card rounded-2xl overflow-hidden border border-zinc-200/50 dark:border-white/5 flex flex-col h-full bg-white dark:bg-[#161617]/50 relative">
+    <div className="glass-card rounded-2xl overflow-hidden border border-zinc-200/50 dark:border-white/5 flex flex-col h-full bg-white dark:bg-[#161617]/50 relative transition-all duration-300 hover:translate-y-[-2px]">
       {/* Status Badge */}
       {product.status === 'sold' && (
-        <span className="absolute top-3 left-3 z-10 text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full bg-red-500 text-white shadow-md">
+        <span className="absolute top-3 right-3 z-10 text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full bg-red-500 text-white shadow-md">
           Sold Out
         </span>
       )}
 
-      {/* Product Image */}
-      <div className="aspect-video relative overflow-hidden bg-zinc-100 dark:bg-zinc-950 flex items-center justify-center border-b border-zinc-200/30 dark:border-white/5">
-        {product.image_url ? (
-          <img 
-            src={product.image_url} 
-            alt={product.name} 
-            className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
-            loading="lazy"
-          />
-        ) : (
-          <div className="flex flex-col items-center text-zinc-400">
-            <ShoppingBag className="w-8 h-8 opacity-40 mb-1" />
-            <span className="text-[10px] uppercase tracking-wider">No Image</span>
-          </div>
-        )}
-      </div>
-
       {/* Card Details */}
-      <div className="p-5 flex flex-col flex-grow gap-2">
-        {/* Category Tag */}
-        <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#0071e3] dark:text-[#2997ff]">
-          {product.categories?.name}
-        </span>
+      <div className="p-6 flex flex-col flex-grow gap-2">
+        {/* Category Tag & Icon */}
+        <div className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wider text-[#0071e3] dark:text-[#2997ff]">
+          <Package className="w-3.5 h-3.5" />
+          <span>{product.categories?.name}</span>
+        </div>
 
         {/* Title */}
-        <h3 className="font-bold text-md tracking-tight leading-tight line-clamp-1">
+        <h3 className="font-bold text-lg tracking-tight leading-tight line-clamp-2 mt-1">
           {product.name}
         </h3>
 
         {/* Info row */}
-        <div className="flex items-center justify-between text-xs text-zinc-500 mt-1">
+        <div className="flex items-center justify-between text-xs text-zinc-500 mt-2">
           <span className="flex items-center gap-1">
-            <User className="w-3 h-3 text-zinc-400" /> {product.seller_name}
+            <User className="w-3.5 h-3.5 text-zinc-400" /> {product.seller_name}
           </span>
-          <span className="bg-zinc-200/60 dark:bg-zinc-800/80 px-2 py-0.5 rounded font-mono font-medium">
+          <span className="bg-zinc-200/60 dark:bg-zinc-800/80 px-2 py-0.5 rounded font-mono font-semibold">
             {product.quantity_option}
           </span>
         </div>
 
         {/* Push to bottom spacer */}
-        <div className="flex-grow"></div>
+        <div className="flex-grow min-h-[1.5rem]"></div>
 
         {/* Price & View button */}
-        <div className="flex items-center justify-between pt-4 border-t border-zinc-100 dark:border-zinc-800 mt-2">
+        <div className="flex items-center justify-between pt-4 border-t border-zinc-150 dark:border-zinc-850 mt-2">
           <div>
-            <span className="text-xs text-zinc-400 block leading-none">Price</span>
+            <span className="text-[10px] text-zinc-400 block leading-none uppercase tracking-wider font-bold">Price</span>
             <span className="text-lg font-extrabold text-zinc-850 dark:text-white">
               ₹{product.price}
             </span>
@@ -447,7 +430,7 @@ function ProductCard({ product }: { product: Product }) {
 
           <Link 
             href={`/products/${product.id}`}
-            className="flex items-center gap-1 px-4 py-2 rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 transition-colors text-xs font-semibold cursor-pointer"
+            className="flex items-center gap-1 px-4 py-2 rounded-full bg-[#0071e3]/10 hover:bg-[#0071e3]/20 text-[#0071e3] dark:text-[#2997ff] dark:bg-[#2997ff]/10 dark:hover:bg-[#2997ff]/20 transition-colors text-xs font-bold cursor-pointer"
           >
             <Eye className="w-3.5 h-3.5" /> Details
           </Link>

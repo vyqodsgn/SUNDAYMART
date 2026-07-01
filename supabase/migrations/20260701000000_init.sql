@@ -33,10 +33,8 @@ CREATE TABLE IF NOT EXISTS public.products (
     price NUMERIC NOT NULL,
     quantity_option TEXT NOT NULL, -- e.g., "500 gm"
     seller_name TEXT NOT NULL,
-    seller_phone TEXT NOT NULL,
     seller_quantity INTEGER NOT NULL DEFAULT 1,
     notes TEXT,
-    image_url TEXT,
     status TEXT NOT NULL DEFAULT 'pending', -- 'pending', 'approved', 'rejected', 'sold'
     is_featured BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
@@ -260,7 +258,7 @@ ON CONFLICT (name) DO NOTHING;
 INSERT INTO public.settings (id, church_name, theme, contact_number, email, address, google_maps_iframe, submission_enabled) 
 VALUES (
     'global', 
-    'St Joseph Church Karyavattom', 
+    'SJCK Sunday Mart', 
     'dark', 
     '+91 94470 12345', 
     'contact@stjosephchurchkaryavattom.org', 
@@ -283,7 +281,7 @@ ON CONFLICT (id) DO NOTHING;
 -- Seed a Welcome Announcement
 INSERT INTO public.announcements (content, is_active)
 VALUES (
-    'Welcome to the St Joseph Church Karyavattom Sunday Marketplace! Submit your homemade items now to display them on the event day.',
+    'Welcome to the SJCK Sunday Mart! Submit your homemade items now to display them on the event day.',
     true
 )
 ON CONFLICT (id) DO NOTHING;

@@ -23,7 +23,7 @@ export const viewport = {
 }
 
 export const metadata: Metadata = {
-  title: "Sunday Harvest Marketplace - St Joseph Church Karyavattom",
+  title: "SJCK Sunday Mart",
   description: "Browse organic spices, homemade snacks, and traditional delicacies from our church community. Submit products for sale and support local parish families.",
 }
 

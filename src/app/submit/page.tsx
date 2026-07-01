@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Search, ChevronDown, Package, User, Phone, Clipboard, Upload, CheckCircle2, ShieldAlert, Sparkles, Loader2 } from 'lucide-react'
+import { Search, ChevronDown, Package, User, Clipboard, CheckCircle2, ShieldAlert, Sparkles, Loader2 } from 'lucide-react'
 import { useApp } from '@/context/AppContext'
 import { useToast } from '@/context/ToastContext'
 import { createClient } from '@/lib/supabase/client'
@@ -35,11 +35,8 @@ export default function SubmitProductPage() {
 
   // User input fields
   const [sellerName, setSellerName] = useState('')
-  const [sellerPhone, setSellerPhone] = useState('')
   const [packsQuantity, setPacksQuantity] = useState('1')
   const [notes, setNotes] = useState('')
-  const [imageFile, setImageFile] = useState<File | null>(null)
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
   
   // Categories from database
   const [categoriesList, setCategoriesList] = useState<{ id: string; name: string }[]>([])
@@ -108,81 +105,7 @@ export default function SubmitProductPage() {
     setShowDropdown(false)
   }
 
-  // Handle image upload input
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
 
-    // Limit size check: 5MB
-    if (file.size > 5 * 1024 * 1024) {
-      showToast('Image size exceeds the 5MB limit', 'error')
-      return
-    }
-
-    // Allowed mime types
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
-    if (!allowedTypes.includes(file.type)) {
-      showToast('Only JPG, PNG and WEBP images are allowed', 'error')
-      return
-    }
-
-    setImageFile(file)
-    const reader = new FileReader()
-    reader.onloadend = () => {
-      setImagePreview(reader.result as string)
-    }
-    reader.readAsDataURL(file)
-  }
-
-  // Canvas Image Compression Helper
-  const compressImage = (file: File): Promise<Blob> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.readAsDataURL(file)
-      reader.onload = (event) => {
-        const img = new Image()
-        img.src = event.target?.result as string
-        img.onload = () => {
-          const canvas = document.createElement('canvas')
-          let width = img.width
-          let height = img.height
-
-          // Limit width/height to maximum 1200px
-          const MAX_SIZE = 1200
-          if (width > height) {
-            if (width > MAX_SIZE) {
-              height *= MAX_SIZE / width
-              width = MAX_SIZE
-            }
-          } else {
-            if (height > MAX_SIZE) {
-              width *= MAX_SIZE / height
-              height = MAX_SIZE
-            }
-          }
-
-          canvas.width = width
-          canvas.height = height
-          const ctx = canvas.getContext('2d')
-          ctx?.drawImage(img, 0, 0, width, height)
-
-          canvas.toBlob(
-            (blob) => {
-              if (blob) {
-                resolve(blob)
-              } else {
-                reject(new Error('Canvas conversion failed'))
-              }
-            },
-            'image/jpeg',
-            0.85 // 85% compression quality
-          )
-        }
-        img.onerror = (err) => reject(err)
-      }
-      reader.onerror = (err) => reject(err)
-    })
-  }
 
   // Form submission
   const handleSubmit = async (e: React.FormEvent) => {
@@ -226,10 +149,6 @@ export default function SubmitProductPage() {
       showToast('Seller name is required', 'error')
       return
     }
-    if (!sellerPhone.trim()) {
-      showToast('Phone number is required', 'error')
-      return
-    }
     if (!packsQuantity || isNaN(Number(packsQuantity)) || Number(packsQuantity) <= 0) {
       showToast('Please enter a valid amount of packs', 'error')
       return
@@ -240,39 +159,8 @@ export default function SubmitProductPage() {
 
     try {
       const supabase = createClient()
-      let finalImageUrl = null
 
-      // 1. Upload & compress image if provided
-      if (imageFile) {
-        showToast('Compressing image...', 'info')
-        const compressedBlob = await compressImage(imageFile)
-        
-        // Generate random path
-        const fileExt = 'jpg' // canvas conversion returns jpeg
-        const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`
-        const filePath = `submissions/${fileName}`
-
-        // Upload to bucket
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('product-images')
-          .upload(filePath, compressedBlob, {
-            contentType: 'image/jpeg',
-            cacheControl: '3600'
-          })
-
-        if (uploadError) {
-          throw new Error(`Image upload failed: ${uploadError.message}`)
-        }
-
-        // Get public URL
-        const { data: { publicUrl } } = supabase.storage
-          .from('product-images')
-          .getPublicUrl(filePath)
-        
-        finalImageUrl = publicUrl
-      }
-
-      // 2. Fetch category UUID
+      // 1. Fetch category UUID
       const { data: dbCat } = await supabase
         .from('categories')
         .select('id')
@@ -283,7 +171,7 @@ export default function SubmitProductPage() {
         throw new Error(`Category "${selectedCategoryName}" does not exist.`)
       }
 
-      // 3. Save product record with status = 'pending'
+      // 2. Save product record with status = 'pending'
       const { error: insertError } = await supabase
         .from('products')
         .insert({
@@ -293,10 +181,8 @@ export default function SubmitProductPage() {
           price: priceNum,
           quantity_option: quantityStr,
           seller_name: sellerName.trim(),
-          seller_phone: sellerPhone.trim(),
           seller_quantity: Number(packsQuantity),
           notes: notes.trim() || null,
-          image_url: finalImageUrl,
           status: 'pending',
           is_featured: false
         })
@@ -312,11 +198,8 @@ export default function SubmitProductPage() {
       setSelectedCategoryName('')
       setSearchQuery('')
       setSellerName('')
-      setSellerPhone('')
       setPacksQuantity('1')
       setNotes('')
-      setImageFile(null)
-      setImagePreview(null)
       
       // Redirect to products catalog page
       router.push('/products')
@@ -510,7 +393,7 @@ export default function SubmitProductPage() {
           )}
 
           {/* Seller Input Details */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-zinc-200/30 dark:border-white/5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-zinc-200/30 dark:border-white/5">
             {/* Seller Name */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block">Seller Name</label>
@@ -523,21 +406,6 @@ export default function SubmitProductPage() {
                   className="w-full text-sm px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-850 bg-white dark:bg-zinc-950/50 focus:outline-none focus:ring-1 focus:ring-blue-500 pl-10"
                 />
                 <User className="w-4 h-4 absolute left-3.5 top-3.5 text-zinc-400" />
-              </div>
-            </div>
-
-            {/* Seller Phone */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block">Phone Number</label>
-              <div className="relative">
-                <input
-                  type="tel"
-                  placeholder="e.g. 9845012345"
-                  value={sellerPhone}
-                  onChange={(e) => setSellerPhone(e.target.value)}
-                  className="w-full text-sm px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-850 bg-white dark:bg-zinc-950/50 focus:outline-none focus:ring-1 focus:ring-blue-500 pl-10"
-                />
-                <Phone className="w-4 h-4 absolute left-3.5 top-3.5 text-zinc-400" />
               </div>
             </div>
 
@@ -569,45 +437,6 @@ export default function SubmitProductPage() {
                 className="w-full text-sm px-4 py-3 rounded-xl border border-zinc-200 dark:border-zinc-850 bg-white dark:bg-zinc-950/50 focus:outline-none focus:ring-1 focus:ring-blue-500 pl-10"
               />
               <Clipboard className="w-4 h-4 absolute left-3.5 top-3.5 text-zinc-400" />
-            </div>
-          </div>
-
-          {/* Image Upload Component */}
-          <div className="space-y-2 pt-2">
-            <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block">Product Image</label>
-            <div className="flex flex-col sm:flex-row items-center gap-4">
-              {/* Selector wrapper */}
-              <label className="flex flex-col items-center justify-center w-full sm:w-44 h-32 border-2 border-dashed border-zinc-300 dark:border-zinc-800 hover:border-blue-500 rounded-2xl cursor-pointer transition-colors bg-zinc-100/30 dark:bg-zinc-900/10">
-                <div className="flex flex-col items-center justify-center p-4 text-center">
-                  <Upload className="w-6 h-6 text-zinc-400 mb-1" />
-                  <span className="text-xs font-semibold text-zinc-500">Upload Image</span>
-                  <span className="text-[9px] text-zinc-400 mt-0.5">JPG, PNG, WEBP (Max 5MB)</span>
-                </div>
-                <input 
-                  type="file" 
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="hidden" 
-                />
-              </label>
-
-              {/* Preview */}
-              {imagePreview ? (
-                <div className="relative w-32 h-32 rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-100 flex items-center justify-center flex-shrink-0">
-                  <img src={imagePreview} alt="Upload preview" className="w-full h-full object-cover" />
-                  <button 
-                    type="button"
-                    onClick={() => { setImageFile(null); setImagePreview(null) }}
-                    className="absolute top-1 right-1 bg-black/60 hover:bg-black text-white p-1 rounded-full text-xs cursor-pointer"
-                  >
-                    Remove
-                  </button>
-                </div>
-              ) : (
-                <div className="w-32 h-32 rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800 bg-zinc-150/10 dark:bg-zinc-900/10 flex items-center justify-center text-zinc-400 text-xs flex-shrink-0">
-                  No preview
-                </div>
-              )}
             </div>
           </div>
 
