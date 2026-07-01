@@ -7,7 +7,14 @@ import { Search, ChevronDown, Package, User, Clipboard, CheckCircle2, ShieldAler
 import { useApp } from '@/context/AppContext'
 import { useToast } from '@/context/ToastContext'
 import { createClient } from '@/lib/supabase/client'
-import { PREDEFINED_PRODUCTS, PREDEFINED_PRODUCTS as fallbackCatalog, CatalogProduct } from '@/lib/catalog'
+import { PREDEFINED_PRODUCTS as fallbackCatalog } from '@/lib/catalog'
+
+// Normalized catalog item interface for the dropdown
+interface CatalogItem {
+  name: string
+  category: string  // normalized from either 'category' or 'category_name'
+  options: { quantity: string; price: number }[]
+}
 
 export default function SubmitProductPage() {
   const router = useRouter()
@@ -15,12 +22,12 @@ export default function SubmitProductPage() {
   const { showToast } = useToast()
 
   // Predefined catalog state (loads from db, falls back to catalog.ts)
-  const [catalog, setCatalog] = useState<CatalogProduct[]>([])
+  const [catalog, setCatalog] = useState<CatalogItem[]>([])
   
   // Search dropdown states
   const [searchQuery, setSearchQuery] = useState('')
   const [showDropdown, setShowDropdown] = useState(false)
-  const [selectedCatalogItem, setSelectedCatalogItem] = useState<CatalogProduct | null>(null)
+  const [selectedCatalogItem, setSelectedCatalogItem] = useState<CatalogItem | null>(null)
   
   // Form fields
   const [isManual, setIsManual] = useState(false)
@@ -48,18 +55,50 @@ export default function SubmitProductPage() {
   // Fetch catalog & categories on mount
   useEffect(() => {
     const loadInitData = async () => {
-      const supabase = createClient()
-      
-      // Load categories
-      const { data: cats } = await supabase.from('categories').select('*').order('name', { ascending: true })
-      if (cats) setCategoriesList(cats)
+      try {
+        const supabase = createClient()
+        
+        // Load categories
+        const { data: cats } = await supabase
+          .from('categories')
+          .select('*')
+          .order('name', { ascending: true })
+        if (cats) setCategoriesList(cats)
 
-      // Load catalog from database
-      const { data: dbCatalog } = await supabase.from('catalog_products').select('*').order('name', { ascending: true })
-      if (dbCatalog && dbCatalog.length > 0) {
-        setCatalog(dbCatalog as unknown as CatalogProduct[])
-      } else {
-        setCatalog(fallbackCatalog)
+        // Load catalog from database - normalize category_name -> category
+        const { data: dbCatalog, error: catalogErr } = await supabase
+          .from('catalog_products')
+          .select('*')
+          .order('name', { ascending: true })
+        
+        if (catalogErr) {
+          console.error('Catalog fetch error:', catalogErr)
+        }
+        
+        if (dbCatalog && dbCatalog.length > 0) {
+          // Normalize: DB uses `category_name`, local uses `category`
+          const normalized: CatalogItem[] = dbCatalog.map((item: any) => ({
+            name: item.name,
+            category: item.category_name || item.category || 'Others',
+            options: Array.isArray(item.options) ? item.options : []
+          }))
+          setCatalog(normalized)
+        } else {
+          // Fallback to local catalog (already uses `category` field)
+          setCatalog(fallbackCatalog.map(item => ({
+            name: item.name,
+            category: item.category,
+            options: item.options
+          })))
+        }
+      } catch (err) {
+        console.error('Error loading catalog/categories:', err)
+        // Use fallback catalog on any error
+        setCatalog(fallbackCatalog.map(item => ({
+          name: item.name,
+          category: item.category,
+          options: item.options
+        })))
       }
     }
     loadInitData()
@@ -82,7 +121,7 @@ export default function SubmitProductPage() {
     item.category.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  const handleSelectPreset = (item: CatalogProduct) => {
+  const handleSelectPreset = (item: CatalogItem) => {
     setSelectedCatalogItem(item)
     setProductName(item.name)
     setSelectedCategoryName(item.category)
@@ -105,11 +144,12 @@ export default function SubmitProductPage() {
     setShowDropdown(false)
   }
 
-
-
   // Form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Prevent double submission
+    if (submitting) return
 
     // Validations
     if (!productName.trim()) {
@@ -141,6 +181,10 @@ export default function SubmitProductPage() {
         return
       }
       const activeOption = availableOptions[selectedOptionIndex]
+      if (!activeOption) {
+        showToast('Please select a package option', 'error')
+        return
+      }
       quantityStr = activeOption.quantity
       priceNum = activeOption.price
     }
@@ -155,20 +199,23 @@ export default function SubmitProductPage() {
     }
 
     setSubmitting(true)
-    const loadToastId = showToast('Submitting product details...', 'loading')
 
     try {
       const supabase = createClient()
 
-      // 1. Fetch category UUID
-      const { data: dbCat } = await supabase
+      // 1. Fetch category UUID by name
+      const { data: dbCat, error: catErr } = await supabase
         .from('categories')
         .select('id')
         .eq('name', selectedCategoryName)
-        .single()
+        .maybeSingle()
+
+      if (catErr) {
+        throw new Error(`Error looking up category: ${catErr.message}`)
+      }
 
       if (!dbCat) {
-        throw new Error(`Category "${selectedCategoryName}" does not exist.`)
+        throw new Error(`Category "${selectedCategoryName}" does not exist in the database. Please contact admin.`)
       }
 
       // 2. Save product record with status = 'pending'
@@ -177,7 +224,9 @@ export default function SubmitProductPage() {
         .insert({
           name: productName.trim(),
           category_id: dbCat.id,
-          description: isManual ? `Submitted manually. Size: ${quantityStr}` : `Community Predefined Catalog Product: ${productName}`,
+          description: isManual
+            ? `Submitted manually. Size: ${quantityStr}`
+            : `Community Predefined Catalog Product: ${productName}`,
           price: priceNum,
           quantity_option: quantityStr,
           seller_name: sellerName.trim(),
@@ -192,20 +241,27 @@ export default function SubmitProductPage() {
       }
 
       showToast('Product submitted successfully for review!', 'success')
+
       // Reset form
       setSelectedCatalogItem(null)
       setProductName('')
       setSelectedCategoryName('')
       setSearchQuery('')
+      setAvailableOptions([])
+      setSelectedOptionIndex(0)
+      setIsManual(false)
+      setManualQuantity('')
+      setManualPrice('')
       setSellerName('')
       setPacksQuantity('1')
       setNotes('')
-      
+
       // Redirect to products catalog page
       router.push('/products')
+
     } catch (error: any) {
       console.error('Error submitting product:', error)
-      showToast(error.message || 'Submission failed. Please check inputs.', 'error')
+      showToast(error.message || 'Submission failed. Please check your inputs and try again.', 'error')
     } finally {
       setSubmitting(false)
     }
@@ -265,7 +321,7 @@ export default function SubmitProductPage() {
             {/* Dropdown Box */}
             {showDropdown && (
               <div className="absolute top-full left-0 w-full mt-2.5 glass-panel border border-zinc-200 dark:border-zinc-850 rounded-2xl shadow-xl z-20 max-h-64 overflow-y-auto bg-white dark:bg-[#0a0a0c]">
-                {filteredCatalog.map((item) => (
+                {filteredCatalog.length > 0 ? filteredCatalog.map((item) => (
                   <button
                     key={item.name}
                     type="button"
@@ -275,7 +331,11 @@ export default function SubmitProductPage() {
                     <span className="font-semibold">{item.name}</span>
                     <span className="text-xs px-2.5 py-0.5 rounded bg-zinc-200/50 dark:bg-zinc-800 text-zinc-400 font-bold uppercase">{item.category}</span>
                   </button>
-                ))}
+                )) : (
+                  <div className="px-4 py-3 text-sm text-zinc-400 font-light text-center">
+                    No matching products found
+                  </div>
+                )}
                 <button
                   type="button"
                   onClick={handleSelectManual}
@@ -312,10 +372,10 @@ export default function SubmitProductPage() {
                   <div className="flex flex-wrap gap-2">
                     {availableOptions.map((opt, index) => (
                       <button
-                        key={opt.quantity}
+                        key={`${opt.quantity}-${index}`}
                         type="button"
                         onClick={() => setSelectedOptionIndex(index)}
-                        className={`text-xs font-semibold px-4.5 py-2.5 rounded-xl border transition-all ${
+                        className={`text-xs font-semibold px-4 py-2.5 rounded-xl border transition-all ${
                           selectedOptionIndex === index
                             ? 'bg-[#0071e3] border-[#0071e3] text-white shadow'
                             : 'border-zinc-200 dark:border-zinc-850 hover:bg-zinc-100 dark:hover:bg-zinc-900'
@@ -384,6 +444,7 @@ export default function SubmitProductPage() {
                     type="number"
                     placeholder="e.g. 150"
                     value={manualPrice}
+                    min="1"
                     onChange={(e) => setManualPrice(e.target.value)}
                     className="w-full text-sm px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-850 bg-white dark:bg-zinc-950 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
@@ -417,6 +478,7 @@ export default function SubmitProductPage() {
                   type="number"
                   placeholder="Amount"
                   value={packsQuantity}
+                  min="1"
                   onChange={(e) => setPacksQuantity(e.target.value)}
                   className="w-full text-sm px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-850 bg-white dark:bg-zinc-950/50 focus:outline-none focus:ring-1 focus:ring-blue-500 pl-10"
                 />
@@ -445,7 +507,7 @@ export default function SubmitProductPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full py-3.5 rounded-xl bg-[#0071e3] hover:bg-[#0077ed] text-white font-bold text-sm transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              className="w-full py-3.5 rounded-xl bg-[#0071e3] hover:bg-[#0077ed] text-white font-bold text-sm transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? (
                 <>

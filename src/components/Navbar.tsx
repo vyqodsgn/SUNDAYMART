@@ -14,7 +14,7 @@ export default function Navbar() {
   const router = useRouter()
   const { theme, toggleTheme } = useTheme()
   const { settings } = useApp()
-  const { showToast } = useToast()
+  const { showToast, dismissToast } = useToast()
   
   const [isOpen, setIsOpen] = useState(false)
   const [user, setUser] = useState<any>(null)
@@ -44,17 +44,25 @@ export default function Navbar() {
     return () => subscription.unsubscribe()
   }, [])
 
+  // Don't render Navbar on admin pages (must be after all hooks)
+  if (pathname.startsWith('/admin')) return null
+
   const handleLogout = async () => {
     const supabase = createClient()
-    const loadingToast = showToast('Logging out...', 'loading')
-    const { error } = await supabase.auth.signOut()
-    
-    if (error) {
-      showToast(error.message, 'error')
-    } else {
-      showToast('Logged out successfully', 'success')
-      router.push('/')
-      router.refresh()
+    const loadingToastId = showToast('Logging out...', 'loading')
+    try {
+      const { error } = await supabase.auth.signOut()
+      dismissToast(loadingToastId)
+      if (error) {
+        showToast(error.message, 'error')
+      } else {
+        showToast('Logged out successfully', 'success')
+        router.push('/')
+        router.refresh()
+      }
+    } catch (err: any) {
+      dismissToast(loadingToastId)
+      showToast('Failed to log out. Please try again.', 'error')
     }
   }
 

@@ -292,10 +292,11 @@ export default function AdminProductsPage() {
       if (error) throw error
 
       showToast('Product updated successfully', 'success')
-      fetchData() // Refresh catalog
       setEditingProduct(null)
+      fetchData() // Refresh catalog
     } catch (err: any) {
       showToast(err.message || 'Failed to save product edits', 'error')
+    } finally {
       setLoading(false)
     }
   }
