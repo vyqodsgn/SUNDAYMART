@@ -51,12 +51,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   const menuItems = [
-    { name: 'Overview', href: '/admin/dashboard', icon: LayoutDashboard },
-    { name: 'Products Queue', href: '/admin/products', icon: ShoppingBag },
-    { name: 'Predefined Catalog', href: '/admin/catalog', icon: ListPlus },
-    { name: 'Categories', href: '/admin/categories', icon: FolderHeart },
-    { name: 'Announcements', href: '/admin/announcements', icon: Volume2 },
-    { name: 'General Settings', href: '/admin/settings', icon: Settings },
+    { name: 'Overview / Orders', href: '/admin/dashboard', icon: LayoutDashboard },
+    { name: 'Catalog Manager', href: '/admin/products', icon: ShoppingBag },
   ]
 
   if (loading) {

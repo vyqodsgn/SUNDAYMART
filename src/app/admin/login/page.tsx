@@ -14,9 +14,8 @@ const ADMIN_EMAIL = 'adminsjck@sjck.internal'
 
 export default function AdminLoginPage() {
   const router = useRouter()
-  const { showToast } = useToast()
+  const { showToast, dismissToast } = useToast()
   const { settings } = useApp()
-
   // Form states
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -58,9 +57,8 @@ export default function AdminLoginPage() {
       showToast('Invalid credentials. Access denied.', 'error')
       return
     }
-
     setLoading(true)
-    showToast('Signing in...', 'loading')
+    const loadingId = showToast('Signing in', 'loading')
 
     try {
       const supabase = createClient()
@@ -69,6 +67,8 @@ export default function AdminLoginPage() {
         email: ADMIN_EMAIL,
         password: password.trim()
       })
+
+      dismissToast(loadingId)
 
       if (error) {
         throw error
@@ -85,15 +85,15 @@ export default function AdminLoginPage() {
         return
       }
 
-      showToast('Login successful! Redirecting...', 'success')
+      showToast('Login successful! Redirecting', 'success')
       router.push('/admin/dashboard')
       router.refresh()
     } catch (err: any) {
+      dismissToast(loadingId)
       console.error('Authentication error:', err)
       showToast(err.message || 'Invalid credentials. Please try again.', 'error')
       setLoading(false)
-    }
-  }
+    }  }
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault()
