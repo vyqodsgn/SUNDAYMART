@@ -16,6 +16,7 @@ interface ToastContextType {
   toasts: Toast[]
   showToast: (message: string, type: ToastType, duration?: number) => string
   dismissToast: (id: string) => void
+  dismissAllLoadingToasts: () => void
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined)
@@ -27,9 +28,22 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     setToasts((prev) => prev.filter((t) => t.id !== id))
   }, [])
 
+  const dismissAllLoadingToasts = useCallback(() => {
+    setToasts((prev) => prev.filter((t) => t.type !== 'loading'))
+  }, [])
+
   const showToast = useCallback((message: string, type: ToastType, duration = 4000) => {
     const id = Math.random().toString(36).substring(2, 9)
-    setToasts((prev) => [...prev, { id, message, type, duration }])
+
+    // Auto-dismiss any existing loading toast when a new non-loading toast arrives
+    if (type !== 'loading') {
+      setToasts((prev) => {
+        const filtered = prev.filter((t) => t.type !== 'loading')
+        return [...filtered, { id, message, type, duration }]
+      })
+    } else {
+      setToasts((prev) => [...prev, { id, message, type, duration }])
+    }
 
     if (type !== 'loading' && duration > 0) {
       setTimeout(() => {
@@ -41,7 +55,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   }, [dismissToast])
 
   return (
-    <ToastContext.Provider value={{ toasts, showToast, dismissToast }}>
+    <ToastContext.Provider value={{ toasts, showToast, dismissToast, dismissAllLoadingToasts }}>
       {children}
       <ToastContainer />
     </ToastContext.Provider>

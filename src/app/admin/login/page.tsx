@@ -32,13 +32,18 @@ export default function AdminLoginPage() {
   // Check if user is already logged in
   useEffect(() => {
     const checkUser = async () => {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user && user.email === ADMIN_EMAIL) {
-        router.push('/admin/dashboard')
-      } else if (user) {
-        // Logged in user is NOT the admin — sign them out and show error
-        await supabase.auth.signOut()
+      try {
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user && user.email === ADMIN_EMAIL) {
+          router.push('/admin/dashboard')
+        } else if (user) {
+          // Logged in user is NOT the admin — sign them out and show error
+          await supabase.auth.signOut()
+        }
+      } catch (err) {
+        // Silently ignore auth check errors
+        console.error('Auth check error:', err)
       }
     }
     checkUser()
@@ -74,12 +79,15 @@ export default function AdminLoginPage() {
         throw error
       }
 
+      // Dismiss loading toast
+      dismissToast(loadingToastId)
+      setLoading(false)
+
       // Check if this is first-time login with default password
       const isDefaultPassword = password.trim() === 'sjck1985'
       
       if (isDefaultPassword) {
         // Prompt to change password
-        setLoading(false)
         setShowChangeModal(true)
         showToast('Login successful! Please change your default password.', 'success')
         return
@@ -91,6 +99,7 @@ export default function AdminLoginPage() {
     } catch (err: any) {
       dismissToast(loadingId)
       console.error('Authentication error:', err)
+      dismissToast(loadingToastId)
       showToast(err.message || 'Invalid credentials. Please try again.', 'error')
       setLoading(false)
     }  }
@@ -120,8 +129,10 @@ export default function AdminLoginPage() {
 
       showToast('Password changed successfully! Redirecting to dashboard...', 'success')
       setShowChangeModal(false)
-      router.push('/admin/dashboard')
-      router.refresh()
+      setTimeout(() => {
+        router.push('/admin/dashboard')
+        router.refresh()
+      }, 1500)
     } catch (err: any) {
       showToast(err.message || 'Failed to update password', 'error')
     } finally {
@@ -130,9 +141,12 @@ export default function AdminLoginPage() {
   }
 
   const handleSkipPasswordChange = () => {
+    setShowChangeModal(false)
     showToast('Password change skipped. You will be prompted again next login.', 'info')
-    router.push('/admin/dashboard')
-    router.refresh()
+    setTimeout(() => {
+      router.push('/admin/dashboard')
+      router.refresh()
+    }, 1000)
   }
 
   return (

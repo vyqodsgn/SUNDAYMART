@@ -42,6 +42,9 @@ export default function Navbar() {
     return () => subscription.unsubscribe()
   }, [])
 
+  // Don't render Navbar on admin pages (must be after all hooks)
+  if (pathname.startsWith('/admin')) return null
+
   const handleLogout = async () => {
     const supabase = createClient()
     const loadingToast = showToast('Logging out', 'loading')

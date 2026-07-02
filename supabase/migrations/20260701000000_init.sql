@@ -127,14 +127,14 @@ CREATE POLICY "Allow public read access to categories"
 ON public.categories FOR SELECT TO public, anon, authenticated USING (true);
 
 CREATE POLICY "Allow admin write access to categories" 
-ON public.categories ALL TO authenticated USING (true) WITH CHECK (true);
+ON public.categories FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
 -- Catalog Product Policies
 CREATE POLICY "Allow public read access to catalog_products" 
 ON public.catalog_products FOR SELECT TO public, anon, authenticated USING (true);
 
 CREATE POLICY "Allow admin write access to catalog_products" 
-ON public.catalog_products ALL TO authenticated USING (true) WITH CHECK (true);
+ON public.catalog_products FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
 -- Product Policies
 CREATE POLICY "Allow public read access to approved and sold products" 
@@ -157,28 +157,28 @@ CREATE POLICY "Allow public read access to announcements"
 ON public.announcements FOR SELECT TO public, anon, authenticated USING (is_active = true);
 
 CREATE POLICY "Allow admin write access to announcements" 
-ON public.announcements ALL TO authenticated USING (true) WITH CHECK (true);
+ON public.announcements FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
 -- Settings Policies
 CREATE POLICY "Allow public read access to settings" 
 ON public.settings FOR SELECT TO public, anon, authenticated USING (true);
 
 CREATE POLICY "Allow admin write access to settings" 
-ON public.settings ALL TO authenticated USING (true) WITH CHECK (true);
+ON public.settings FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
 -- Event Details Policies
 CREATE POLICY "Allow public read access to event_details" 
 ON public.event_details FOR SELECT TO public, anon, authenticated USING (true);
 
 CREATE POLICY "Allow admin write access to event_details" 
-ON public.event_details ALL TO authenticated USING (true) WITH CHECK (true);
+ON public.event_details FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
 -- Banner Policies
 CREATE POLICY "Allow public read access to banners" 
 ON public.homepage_banners FOR SELECT TO public, anon, authenticated USING (is_active = true);
 
 CREATE POLICY "Allow admin write access to banners" 
-ON public.homepage_banners ALL TO authenticated USING (true) WITH CHECK (true);
+ON public.homepage_banners FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
 -- Contact Policies
 CREATE POLICY "Allow public to insert contacts" 
