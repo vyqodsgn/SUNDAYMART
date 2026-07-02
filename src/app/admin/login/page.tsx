@@ -79,8 +79,6 @@ export default function AdminLoginPage() {
         throw error
       }
 
-      // Dismiss loading toast
-      dismissToast(loadingToastId)
       setLoading(false)
 
       // Check if this is first-time login with default password
@@ -99,7 +97,6 @@ export default function AdminLoginPage() {
     } catch (err: any) {
       dismissToast(loadingId)
       console.error('Authentication error:', err)
-      dismissToast(loadingToastId)
       showToast(err.message || 'Invalid credentials. Please try again.', 'error')
       setLoading(false)
     }  }

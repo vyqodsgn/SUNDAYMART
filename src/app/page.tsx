@@ -67,7 +67,7 @@ export default function Home() {
     const next = Math.min(maxQty, Math.max(0, current + delta))
     
     if (current + delta > maxQty && delta > 0) {
-      showToast(`Cannot order more than available stock (${maxQty} units)`, 'warning')
+      showToast(`Cannot order more than available stock (${maxQty} units)`, 'error')
     }
     
     setSelectedQuantities(prev => ({
